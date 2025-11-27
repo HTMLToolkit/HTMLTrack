@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Plus, Search, Trash2, MapPin, Clock, CheckCircle2, AlertCircle, Loader } from 'lucide-react';
 import TrackingForm from './TrackingForm';
 import TrackingCard from './TrackingCard';
@@ -27,18 +27,20 @@ export default function MainContent({
 }: MainContentProps) {
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'in_transit' | 'delivered' | 'failed'>('all');
+  const [filter, setFilter] = useState<'All' | 'in_transit' | 'delivered' | 'failed'>('All');
 
   const filteredPackages = packages.filter(pkg => {
     const matchesSearch = 
       pkg.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pkg.carrier.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesFilter = filter === 'all' || pkg.status === filter;
+    const matchesFilter = filter === 'All' || pkg.status === filter;
     
     return matchesSearch && matchesFilter;
   });
 
+  //TODO: use properly
+  //@ts-ignore
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -77,7 +79,7 @@ export default function MainContent({
         </div>
 
         <div className={styles.filters}>
-          {(['all', 'in_transit', 'delivered', 'failed'] as const).map(f => (
+          {(['All', 'in_transit', 'delivered', 'failed'] as const).map(f => (
             <button
               key={f}
               className={`${styles.filterBtn} ${filter === f ? styles.filterBtnActive : ''}`}

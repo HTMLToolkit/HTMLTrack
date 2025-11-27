@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Package, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import MainContent from './MainContent';
 import styles from './App.module.css';
 
@@ -51,7 +51,6 @@ export default function App() {
       <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.logo}>
-            <Package size={32} />
             <h1>HTMLTrack</h1>
           </div>
           <button 
@@ -59,7 +58,7 @@ export default function App() {
             onClick={toggleTheme}
             aria-label="Toggle theme"
           >
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? <Sun size={24} /> : <Moon size={24} />}
           </button>
         </div>
       </header>
