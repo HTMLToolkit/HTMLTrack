@@ -1,0 +1,181 @@
+.card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: all var(--animation-duration-normal) ease;
+  cursor: default;
+  position: relative;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  border-color: var(--primary);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--themegradient);
+}
+
+.statusDelivered::before {
+  background: linear-gradient(90deg, hsl(142, 76%, 36%), hsl(132, 63%, 41%));
+}
+
+.statusInTransit::before {
+  background: var(--themegradient);
+}
+
+.statusFailed::before {
+  background: linear-gradient(90deg, var(--error), hsl(3, 100%, 61%));
+}
+
+.statusPending::before {
+  background: linear-gradient(90deg, var(--muted-foreground), var(--muted));
+}
+
+.header {
+  padding: var(--spacing-4);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.03), rgba(236, 72, 153, 0.03));
+  border-bottom: 1px solid var(--border);
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: fit-content;
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius);
+  background-color: var(--primary-transparent-1);
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.content {
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.trackingSection,
+.carrierSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.trackingNumber {
+  font-family: var(--font-family-monospace);
+  font-size: 0.875rem;
+  color: var(--primary);
+  background-color: var(--background);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.carrier {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.infoRow {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+  padding: var(--spacing-3);
+  background-color: var(--background);
+  border-radius: var(--radius);
+}
+
+.infoRow svg {
+  flex-shrink: 0;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+.infoRow > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.info {
+  font-size: 0.9375rem;
+  color: var(--foreground);
+  margin: 0;
+  font-weight: 500;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border);
+}
+
+.lastUpdate {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.statusIconSuccess {
+  color: hsl(142, 76%, 36%);
+}
+
+.statusIconActive {
+  color: var(--primary);
+  animation: spin 2s linear infinite;
+}
+
+.statusIconError {
+  color: var(--error);
+}
+
+.statusIconPending {
+  color: var(--muted-foreground);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding-bottom: 2.5rem;
+  }
+
+  .content {
+    gap: var(--spacing-3);
+  }
+
+  .infoRow {
+    padding: var(--spacing-2);
+    gap: var(--spacing-2);
+  }
+}

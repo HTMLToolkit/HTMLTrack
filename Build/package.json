@@ -1,30 +1,39 @@
 {
-  "name": "web-template",
-  "version": "0.1.0",
-  "description": "My typical web dev starter project.",
-  "main": "index.js",
+  "name": "htmltrack",
+  "version": "1.0.0",
+  "description": "Package tracking app with React and a clean UI.",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "lint": "eslint src --ext ts,tsx",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NellowTCS/Web-Template.git"
+    "url": "git+https://github.com/HTMLToolkit/HTMLTrack.git"
   },
   "author": "NellowTCS",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/NellowTCS/Web-Template/issues"
+    "url": "https://github.com/HTMLToolkit/HTMLTrack/issues"
   },
-  "homepage": "https://github.com/NellowTCS/Web-Template#readme",
+  "homepage": "https://github.com/HTMLToolkit/HTMLTrack#readme",
+
   "dependencies": {
-    "vite": "^7.1.3"
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
     "@vite-pwa/assets-generator": "^1.0.1",
     "sharp": "^0.34.4",
-    "vite-plugin-pwa": "^1.0.3"
+    "vite-plugin-pwa": "^1.0.3",
+    "typescript": "^5.0.0",
+    "vite": "^7.1.3"
   }
 }

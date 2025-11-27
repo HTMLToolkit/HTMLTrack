@@ -1,0 +1,13 @@
+name = "htmltrack-worker"
+main = "src/index.ts"
+
+[build]
+command = "npm install && npm run build"
+cwd = "./Backend"
+watch_paths = ["src/**/*.ts"]
+
+[vars]
+LOG_LEVEL = "info"
+
+# Secrets are set via: wrangler secret put TRACK_API_KEY
+# Or in .dev.vars for local development
