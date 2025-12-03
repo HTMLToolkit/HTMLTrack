@@ -1,2 +1,2 @@
-# Web-Template
-My typical web dev starter project.
+# HTMLTrack
+A clean simple frontend for 17Track.
