@@ -1,2 +1,2 @@
 # HTMLTrack
-A clean simple frontend for 17Track.
+A clean React frontend for 17Track.
