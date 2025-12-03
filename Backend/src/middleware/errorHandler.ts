@@ -1,3 +1,9 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type'
+};
+
 export function errorHandler(error: unknown): Response {
   console.error('[Error]', error);
 
@@ -11,7 +17,10 @@ export function errorHandler(error: unknown): Response {
     }),
     {
       status,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      }
     }
   );
 }

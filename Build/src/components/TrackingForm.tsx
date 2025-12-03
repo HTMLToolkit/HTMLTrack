@@ -26,6 +26,21 @@ const CARRIERS = [
   'Other'
 ];
 
+// Use environment variable, or relative path (for proxy), or fallback to production URL
+const getApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // In development, use relative URL to leverage Vite proxy
+  if (import.meta.env.DEV) {
+    return '';
+  }
+  // Production fallback
+  return 'https://htmltrack-worker.neeljaiswal23.workers.dev';
+};
+
+const API_BASE_URL = getApiUrl();
+
 export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [carrier, setCarrier] = useState('UPS');
@@ -44,17 +59,23 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
     setError('');
 
     try {
-      const response = await fetch('/api/track', {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+      const response = await fetch(`${API_BASE_URL}/api/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trackingNumber, carrier })
+        body: JSON.stringify({ trackingNumber, carrier }),
+        signal: controller.signal
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to track package');
-      }
+      clearTimeout(timeoutId);
 
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to track package');
+      }
 
       const newPackage: TrackingPackage = {
         id: Math.random().toString(36).substr(2, 9),
@@ -69,7 +90,17 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
       onAdd(newPackage);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please try again.');
+        } else if (err.message === 'Failed to fetch') {
+          setError('Unable to connect to server. Please check your connection.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
