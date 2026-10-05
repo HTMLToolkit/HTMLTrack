@@ -1,13 +1,13 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
+  gap: var(--spacing-4);
 }
 
 .controls {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
 }
 
 .searchBox {
@@ -31,6 +31,7 @@
   background-color: var(--card);
   color: var(--foreground);
   font-size: 1rem;
+  font-family: var(--font-family-base);
   transition: all var(--animation-duration-fast) ease;
 }
 
@@ -51,14 +52,18 @@
 }
 
 .filterBtn {
-  padding: var(--spacing-2) var(--spacing-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-full);
   background-color: var(--card);
   color: var(--foreground);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  font-family: var(--font-family-base);
   transition: all var(--animation-duration-fast) ease;
 }
 
@@ -73,60 +78,19 @@
   color: var(--primary-foreground);
 }
 
-.addBtn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-3) var(--spacing-4);
-  background: var(--themegradient);
-  border: none;
-  border-radius: var(--radius);
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--animation-duration-fast) ease;
-  width: fit-content;
-}
-
-.addBtn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.addBtn:active {
-  transform: translateY(0);
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-4);
-}
-
-.statItem {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-  padding: var(--spacing-4);
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-.statLabel {
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-  font-weight: 500;
-}
-
-.statValue {
-  font-size: 2rem;
+.filterCount {
+  font-size: 0.6875rem;
   font-weight: 700;
-  background: var(--themegradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--primary-transparent-2);
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+
+.filterBtnActive .filterCount {
+  background: var(--primary-foreground);
+  color: var(--primary);
 }
 
 .grid {
@@ -136,103 +100,41 @@
   min-height: 200px;
 }
 
-.packageWrapper {
-  position: relative;
-}
-
-.deleteBtn {
-  position: absolute;
-  top: var(--spacing-3);
-  right: var(--spacing-3);
-  width: 2rem;
-  height: 2rem;
-  border: none;
-  border-radius: var(--radius);
-  background-color: var(--error);
-  color: var(--error-foreground);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: all var(--animation-duration-fast) ease;
-  z-index: 10;
-}
-
-.packageWrapper:hover .deleteBtn {
-  opacity: 1;
-}
-
-.deleteBtn:hover {
-  background-color: color-mix(in srgb, var(--error) 80%, black);
-  transform: scale(1.1);
-}
-
 .empty {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-3);
   padding: var(--spacing-8);
   color: var(--muted-foreground);
   text-align: center;
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
 }
 
 .empty svg {
-  opacity: 0.4;
+  opacity: 0.5;
   color: var(--primary);
 }
 
 .empty h3 {
-  font-size: 1.25rem;
+  margin: 0;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--foreground);
 }
 
 .empty p {
+  margin: 0;
   font-size: 0.875rem;
-  max-width: 300px;
-}
-
-.statusIconSuccess {
-  color: hsl(142, 76%, 36%);
-}
-
-.statusIconActive {
-  color: var(--primary);
-  animation: spin 2s linear infinite;
-}
-
-.statusIconError {
-  color: var(--error);
-}
-
-.statusIconPending {
-  color: var(--muted-foreground);
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  max-width: 320px;
 }
 
 @media (max-width: 768px) {
-  .controls {
-    gap: var(--spacing-3);
-  }
-
-  .filters {
-    gap: var(--spacing-1);
-  }
-
   .grid {
     grid-template-columns: 1fr;
-  }
-
-  .addBtn {
-    width: 100%;
-    justify-content: center;
   }
 }

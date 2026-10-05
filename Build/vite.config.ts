@@ -3,36 +3,72 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
-  base: "./",
+  base: './',
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['robots.txt'],
+      includeAssets: ['robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'HTMLTrack',
+        name: 'HTMLTrack - Parcel Tracking',
         short_name: 'HTMLTrack',
+        description: 'Track every parcel in one place with live status, delivery estimates and a map.',
         start_url: './',
+        scope: './',
         display: 'standalone',
-        theme_color: '#00bfff',
-        background_color: '#00bfff',
-      },
-      pwaAssets: {
-        image: 'public/source-image.png',
-        preset: 'minimal-2023',
-        includeHtmlHeadLinks: true,
-      },
-      workbox: {
-        runtimeCaching: [
+        orientation: 'portrait-primary',
+        theme_color: '#8b5cf6',
+        background_color: '#8b5cf6',
+        icons: [
           {
-            urlPattern: /.*\.(js|css|html)$/,
-            handler: 'NetworkFirst',
-            options: { cacheName: 'app-shell' },
+            src: 'icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
           },
           {
-            urlPattern: /.*\.(png|ico|json)$/,
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            urlPattern: /^https:\/\/basemaps\.cartocdn\.com\/.*/i,
             handler: 'CacheFirst',
-            options: { cacheName: 'assets' },
+            options: {
+              cacheName: 'map-tiles',
+              expiration: { maxEntries: 400, maxAgeSeconds: 604800 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 31536000 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
           },
         ],
       },
@@ -41,7 +77,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8787',
+        target: 'http://127.0.0.1:8787',
         changeOrigin: true,
       },
     },

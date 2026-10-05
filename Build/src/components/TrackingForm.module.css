@@ -104,6 +104,26 @@
   cursor: not-allowed;
 }
 
+.hint {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.mockNotice {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-6);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-transparent-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
 .error {
   padding: var(--spacing-3);
   background-color: color-mix(in srgb, var(--error) 15%, transparent);
@@ -187,6 +207,15 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

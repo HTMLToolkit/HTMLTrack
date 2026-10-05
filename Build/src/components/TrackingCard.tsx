@@ -1,112 +1,169 @@
-import React from 'react';
-import { CheckCircle2, Loader, AlertCircle, Clock, MapPin, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import {
+  CheckCircle2,
+  Truck,
+  AlertCircle,
+  Clock,
+  MapPin,
+  Calendar,
+  ChevronDown,
+  Trash2,
+  Navigation,
+} from 'lucide-react';
+import type { PackageStatus, TrackingPackage } from '../types/tracking';
+import { STATUS_LABELS } from '../types/tracking';
+import {
+  statusColor,
+  formatRelative,
+  formatDeliveryWindow,
+  daysUntil,
+} from '../lib/format';
 import styles from './TrackingCard.module.css';
 
-interface TrackingPackage {
-  id: string;
-  trackingNumber: string;
-  carrier: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'failed';
-  lastUpdate: Date;
-  destination?: string;
-  estimatedDelivery?: Date;
-}
+const ICONS: Record<PackageStatus, typeof Clock> = {
+  pending: Clock,
+  in_transit: Truck,
+  out_for_delivery: Navigation,
+  delivered: CheckCircle2,
+  failed: AlertCircle,
+};
 
 interface TrackingCardProps {
   package: TrackingPackage;
+  selected: boolean;
+  onSelect: () => void;
+  onRemove: () => void;
 }
 
-export default function TrackingCard({ package: pkg }: TrackingCardProps) {
-  const getStatusIcon = () => {
-    switch (pkg.status) {
-      case 'delivered':
-        return <CheckCircle2 size={24} className={styles.statusIconSuccess} />;
-      case 'in_transit':
-        return <Loader size={24} className={styles.statusIconActive} />;
-      case 'failed':
-        return <AlertCircle size={24} className={styles.statusIconError} />;
-      default:
-        return <Clock size={24} className={styles.statusIconPending} />;
-    }
-  };
-
-  const getStatusLabel = () => {
-    const labels: Record<string, string> = {
-      'pending': 'Pending',
-      'in_transit': 'In Transit',
-      'delivered': 'Delivered',
-      'failed': 'Failed'
-    };
-    return labels[pkg.status] || pkg.status;
-  };
-
-  const getStatusColor = () => {
-    switch (pkg.status) {
-      case 'delivered':
-        return styles.statusDelivered;
-      case 'in_transit':
-        return styles.statusInTransit;
-      case 'failed':
-        return styles.statusFailed;
-      default:
-        return styles.statusPending;
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+export default function TrackingCard({
+  package: pkg,
+  selected,
+  onSelect,
+  onRemove,
+}: TrackingCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const Icon = ICONS[pkg.status] ?? Clock;
+  const color = statusColor(pkg.status);
+  const window = formatDeliveryWindow(pkg.estimatedDelivery, pkg.estimatedDeliveryTo);
+  const days = daysUntil(pkg.estimatedDelivery);
+  const waiting = pkg.status === 'pending';
+  const checked = formatRelative(pkg.lastCheckedAt ?? pkg.lastUpdate);
 
   return (
-    <div className={`${styles.card} ${getStatusColor()}`}>
-      <div className={styles.header}>
-        <div className={styles.statusBadge}>
-          {getStatusIcon()}
-          <span>{getStatusLabel()}</span>
-        </div>
-      </div>
+    <article
+      className={`${styles.card} ${selected ? styles.selected : ''}`}
+      style={{ ['--accent' as string]: color }}
+    >
+      <button
+        type="button"
+        className={styles.summary}
+        onClick={onSelect}
+        aria-expanded={selected}
+      >
+        <span className={styles.iconWrap} style={{ background: color }}>
+          <Icon size={18} />
+        </span>
 
-      <div className={styles.content}>
-        <div className={styles.trackingSection}>
-          <label className={styles.label}>Tracking Number</label>
+        <span className={styles.meta}>
+          <span className={styles.carrier}>{pkg.carrier}</span>
           <code className={styles.trackingNumber}>{pkg.trackingNumber}</code>
-        </div>
+        </span>
 
-        <div className={styles.carrierSection}>
-          <label className={styles.label}>Carrier</label>
-          <p className={styles.carrier}>{pkg.carrier}</p>
-        </div>
-
-        {pkg.destination && (
-          <div className={styles.infoRow}>
-            <MapPin size={16} />
-            <div>
-              <label className={styles.label}>Destination</label>
-              <p className={styles.info}>{pkg.destination}</p>
-            </div>
-          </div>
-        )}
-
-        {pkg.estimatedDelivery && (
-          <div className={styles.infoRow}>
-            <Calendar size={16} />
-            <div>
-              <label className={styles.label}>Est. Delivery</label>
-              <p className={styles.info}>{formatDate(pkg.estimatedDelivery)}</p>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.footer}>
-          <span className={styles.lastUpdate}>
-            Updated {formatDate(pkg.lastUpdate)}
+        <span className={styles.statusGroup}>
+          <span className={styles.badge} style={{ color, borderColor: color }}>
+            {waiting ? 'Waiting' : STATUS_LABELS[pkg.status]}
           </span>
-        </div>
+          <span className={styles.updated}>{checked}</span>
+        </span>
+      </button>
+
+      <div className={styles.body}>
+        {waiting ? (
+          <p className={styles.waitingNote}>
+            No scans reported yet. This refreshes automatically every 45 seconds
+            until the carrier reports movement.
+          </p>
+        ) : (
+          <>
+            {pkg.destination && (
+              <div className={styles.infoRow}>
+                <MapPin size={15} />
+                <span className={styles.info}>{pkg.destination}</span>
+                {pkg.coordinates && (
+                  <span className={styles.mapped} title="Shown on the map">
+                    mapped
+                  </span>
+                )}
+              </div>
+            )}
+
+            {window && (
+              <div className={styles.infoRow}>
+                <Calendar size={15} />
+                <span className={styles.info}>{window}</span>
+                {days !== null && days >= 0 && (
+                  <span className={styles.eta}>
+                    {days === 0
+                      ? 'today'
+                      : days === 1
+                        ? 'tomorrow'
+                        : `in ${days} days`}
+                  </span>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {pkg.lastError && (
+          <p className={styles.error} role="alert">
+            {pkg.lastError}
+          </p>
+        )}
+
+        {pkg.events.length > 0 && (
+          <>
+            <button
+              type="button"
+              className={styles.timelineToggle}
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+            >
+              {pkg.events.length} event{pkg.events.length === 1 ? '' : 's'}
+              <ChevronDown
+                size={15}
+                className={expanded ? styles.chevronOpen : undefined}
+              />
+            </button>
+
+            {expanded && (
+              <ol className={styles.timeline}>
+                {pkg.events.slice(0, 12).map((event, index) => (
+                  <li key={`${event.timestamp}-${index}`} className={styles.event}>
+                    <span className={styles.eventDot} />
+                    <div>
+                      <p className={styles.eventDesc}>{event.description}</p>
+                      <p className={styles.eventMeta}>
+                        {event.location} · {formatRelative(event.timestamp)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </>
+        )}
       </div>
-    </div>
+
+      <button
+        type="button"
+        className={styles.remove}
+        onClick={onRemove}
+        aria-label={`Remove parcel ${pkg.trackingNumber}`}
+        title="Remove parcel"
+      >
+        <Trash2 size={15} />
+      </button>
+    </article>
   );
 }

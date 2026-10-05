@@ -1,57 +1,75 @@
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { X, Loader } from 'lucide-react';
+import { trackPackage, ApiError, isMockMode, mockTrack } from '../lib/api';
+import {
+  CARRIERS,
+  OTHER_CARRIER,
+  detectCarrier,
+  normalizeTrackingNumber,
+} from '../lib/carriers';
+import type { PackageStatus } from '../types/tracking';
 import styles from './TrackingForm.module.css';
 
-interface TrackingPackage {
-  id: string;
+interface TrackResult {
   trackingNumber: string;
   carrier: string;
-  status: 'pending' | 'in_transit' | 'delivered' | 'failed';
-  lastUpdate: Date;
+  status: PackageStatus;
+  lastUpdate: string;
   destination?: string;
-  estimatedDelivery?: Date;
+  estimatedDelivery?: string;
+  estimatedDeliveryTo?: string;
+  coordinates?: { latitude: number; longitude: number };
+  events: Array<{
+    timestamp: string;
+    location: string;
+    description: string;
+  }>;
 }
 
 interface TrackingFormProps {
-  onAdd: (pkg: TrackingPackage) => void;
+  onAdd: (result: TrackResult) => Promise<unknown> | void;
   onClose: () => void;
 }
 
-const CARRIERS = [
-  'UPS',
-  'FedEx',
-  'USPS',
-  'DHL',
-  'Amazon Logistics',
-  'Other'
-];
-
-// Use environment variable, or relative path (for proxy), or fallback to production URL
-const getApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // In development, use relative URL to leverage Vite proxy
-  if (import.meta.env.DEV) {
-    return '';
-  }
-  // Production fallback
-  return 'https://htmltrack-worker.neeljaiswal23.workers.dev';
-};
-
-const API_BASE_URL = getApiUrl();
+const mock = isMockMode();
 
 export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
   const [trackingNumber, setTrackingNumber] = useState('');
-  const [carrier, setCarrier] = useState('UPS');
+  const [carrier, setCarrier] = useState(OTHER_CARRIER);
+  const [carrierTouched, setCarrierTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const normalized = useMemo(
+    () => normalizeTrackingNumber(trackingNumber),
+    [trackingNumber]
+  );
+
+  const detected = useMemo(
+    () => (normalized.length >= 6 ? detectCarrier(normalized) : null),
+    [normalized]
+  );
+
+  const effectiveCarrier = carrierTouched ? carrier : detected?.name ?? OTHER_CARRIER;
+
+  const handleNumberChange = (value: string) => {
+    setTrackingNumber(value);
+    setError('');
+    if (!carrierTouched) {
+      const next = detectCarrier(normalizeTrackingNumber(value));
+      if (next) setCarrier(next.name);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!trackingNumber.trim()) {
-      setError('Please enter a tracking number');
+
+    if (!normalized) {
+      setError('Enter a tracking number to continue.');
+      return;
+    }
+    if (normalized.length < 6) {
+      setError('That tracking number looks too short.');
       return;
     }
 
@@ -60,46 +78,37 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      const timeout = window.setTimeout(() => controller.abort(), 20000);
 
-      const response = await fetch(`${API_BASE_URL}/api/track`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trackingNumber, carrier }),
-        signal: controller.signal
-      });
+      const result = mock
+        ? await new Promise<TrackResult>((resolve) =>
+            window.setTimeout(
+              () =>
+                resolve({
+                  ...mockTrack(normalized, effectiveCarrier),
+                  carrier: effectiveCarrier,
+                }),
+              650
+            )
+          )
+        : await trackPackage(normalized, effectiveCarrier, controller.signal);
 
-      clearTimeout(timeoutId);
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to track package');
-      }
-
-      const newPackage: TrackingPackage = {
-        id: Math.random().toString(36).substr(2, 9),
-        trackingNumber: trackingNumber.toUpperCase(),
-        carrier,
-        status: data.status || 'in_transit',
-        lastUpdate: new Date(),
-        destination: data.destination,
-        estimatedDelivery: data.estimatedDelivery ? new Date(data.estimatedDelivery) : undefined
-      };
-
-      onAdd(newPackage);
+      window.clearTimeout(timeout);
+      await onAdd(result);
       onClose();
     } catch (err) {
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          setError('Request timed out. Please try again.');
-        } else if (err.message === 'Failed to fetch') {
-          setError('Unable to connect to server. Please check your connection.');
-        } else {
-          setError(err.message);
-        }
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('The tracking provider took too long to respond. Try again.');
+      } else if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(
+          err.message === 'Failed to fetch'
+            ? 'Cannot reach the tracking service. Is the backend running?'
+            : err.message
+        );
       } else {
-        setError('An unexpected error occurred');
+        setError('Something went wrong. Try again.');
       }
     } finally {
       setLoading(false);
@@ -107,57 +116,89 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
   };
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.overlay} onClick={onClose} role="presentation">
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="track-title"
+      >
         <div className={styles.header}>
-          <h2>Track New Package</h2>
-          <button 
+          <h2 id="track-title">Track a parcel</h2>
+          <button
             className={styles.closeBtn}
             onClick={onClose}
             aria-label="Close"
+            type="button"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
+        {mock && (
+          <p className={styles.mockNotice}>
+            Demo mode with sample data, no API calls.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="tracking">Tracking number</label>
+            <input
+              id="tracking"
+              className={styles.input}
+              value={trackingNumber}
+              onChange={(e) => handleNumberChange(e.target.value)}
+              placeholder="1Z999AA10123456784"
+              disabled={loading}
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {detected && (
+              <span className={styles.hint}>
+                Looks like a {detected.name} number
+              </span>
+            )}
+          </div>
+
           <div className={styles.formGroup}>
             <label htmlFor="carrier">Carrier</label>
             <select
               id="carrier"
-              value={carrier}
-              onChange={(e) => setCarrier(e.target.value)}
               className={styles.select}
+              value={effectiveCarrier}
+              onChange={(e) => {
+                setCarrierTouched(true);
+                setCarrier(e.target.value);
+              }}
+              disabled={loading}
             >
-              {CARRIERS.map(c => (
-                <option key={c} value={c}>{c}</option>
+              <option value={OTHER_CARRIER}>Auto-detect</option>
+              {CARRIERS.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name}
+                </option>
               ))}
             </select>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="tracking">Tracking Number</label>
-            <input
-              id="tracking"
-              type="text"
-              placeholder="Enter tracking number..."
-              value={trackingNumber}
-              onChange={(e) => setTrackingNumber(e.target.value)}
-              className={styles.input}
-              disabled={loading}
-              autoFocus
-            />
+            <span className={styles.hint}>
+              {CARRIERS.find((c) => c.name === effectiveCarrier)?.hint ??
+                'Let the carrier guess from the number'}
+            </span>
           </div>
 
           {error && (
-            <div className={styles.error}>{error}</div>
+            <div className={styles.error} role="alert">
+              {error}
+            </div>
           )}
 
           <div className={styles.actions}>
             <button
               type="button"
-              onClick={onClose}
               className={styles.cancelBtn}
+              onClick={onClose}
               disabled={loading}
             >
               Cancel
@@ -169,11 +210,11 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
             >
               {loading ? (
                 <>
-                  <Loader size={18} />
-                  Tracking...
+                  <Loader size={16} className={styles.spin} />
+                  Tracking…
                 </>
               ) : (
-                'Track Package'
+                'Add parcel'
               )}
             </button>
           </div>
