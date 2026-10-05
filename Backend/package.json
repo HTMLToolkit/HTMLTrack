@@ -6,7 +6,11 @@
   "scripts": {
     "build": "vite build",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "make-pretty": "npm run lint:fix && npm run format"
   },
   "dependencies": {
     "itty-router": "^4.2.2",
@@ -14,8 +18,13 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
+    "@eslint/js": "^9.39.5",
     "@types/node": "^20.0.0",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.71.1",
     "wrangler": "^4.51.0"
   }
 }

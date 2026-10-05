@@ -42,15 +42,17 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
 
   const normalized = useMemo(
     () => normalizeTrackingNumber(trackingNumber),
-    [trackingNumber]
+    [trackingNumber],
   );
 
   const detected = useMemo(
     () => (normalized.length >= 6 ? detectCarrier(normalized) : null),
-    [normalized]
+    [normalized],
   );
 
-  const effectiveCarrier = carrierTouched ? carrier : detected?.name ?? OTHER_CARRIER;
+  const effectiveCarrier = carrierTouched
+    ? carrier
+    : (detected?.name ?? OTHER_CARRIER);
 
   const handleNumberChange = (value: string) => {
     setTrackingNumber(value);
@@ -88,8 +90,8 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
                   ...mockTrack(normalized, effectiveCarrier),
                   carrier: effectiveCarrier,
                 }),
-              650
-            )
+              650,
+            ),
           )
         : await trackPackage(normalized, effectiveCarrier, controller.signal);
 
@@ -105,7 +107,7 @@ export default function TrackingForm({ onAdd, onClose }: TrackingFormProps) {
         setError(
           err.message === 'Failed to fetch'
             ? 'Cannot reach the tracking service. Is the backend running?'
-            : err.message
+            : err.message,
         );
       } else {
         setError('Something went wrong. Try again.');

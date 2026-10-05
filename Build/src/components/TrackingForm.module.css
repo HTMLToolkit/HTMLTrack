@@ -19,7 +19,8 @@
   box-shadow: var(--shadow-lg);
   max-width: 500px;
   width: 90%;
-  animation: slideUp var(--animation-duration-normal) cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUp var(--animation-duration-normal)
+    cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .header {

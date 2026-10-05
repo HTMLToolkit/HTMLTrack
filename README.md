@@ -12,8 +12,9 @@ windows and a map of every destination.
 - **Persistence**: parcels live in IndexedDB (with a `localStorage` fallback),
   so they survive a refresh. Swappable for a hosted store behind the same
   `PackageStore` interface in `Build/src/lib/storage.ts`.
-- **Delivery map**: MapLibre GL with CARTO tiles. No API key or billing
-  required. Markers are colour-coded by status and follow the app theme.
+- **Delivery map**: MapLibre GL with Esri's Canvas Light/Dark Gray basemaps. No
+  API key or billing required. Markers are colour-coded by status and follow the
+  app theme.
 - **Delivery estimates**: estimated delivery window with a relative countdown
   ("tomorrow", "in 3 days").
 - **Event timeline**: full scan history per parcel, not just the latest status.
@@ -73,8 +74,10 @@ The **backend is not deployed by CI**. Run `cd Backend && npm run deploy`
 - Carriers can be restricted per account by 17Track. If registration fails with
   a policy message, that carrier is unavailable on your key, and the app surfaces
   the provider's own wording rather than a generic error.
-- Map tiles come from CARTO's free basemaps; heavy use may need your own tile
-  source.
+- Map tiles come from Esri's public Canvas basemap endpoints. They need no key,
+  but they are Esri's free public service and are not covered by an SLA.
+- CARTO is available as an alternative by setting `VITE_CARTO_API_KEY`. Without
+  that key CARTO's endpoints now return a placeholder tile rather than map data.
 
 ## License
 

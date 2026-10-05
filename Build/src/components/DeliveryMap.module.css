@@ -72,7 +72,9 @@
 
 .markerSelected .markerDot {
   transform: scale(1.35);
-  box-shadow: var(--shadow-lg), 0 0 0 3px var(--card);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 3px var(--card);
 }
 
 .markerSelected:hover .markerDot {
@@ -82,6 +84,14 @@
 .marker:focus-visible {
   outline: 2px solid var(--themecolor);
   outline-offset: 2px;
+}
+
+:global(.maplibregl-ctrl-reset) :global(.maplibregl-ctrl-icon) {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='29'%20height='29'%20fill='%23333'%20viewBox='-326%20-328%201293%201293'%3E%3Cpath%20d='M341.8%2072.6C329.5%2061.2%20310.5%2061.2%20298.3%2072.6L74.3%20280.6C64.7%20289.6%2061.5%20303.5%2066.3%20315.7C71.1%20327.9%2082.8%20336%2096%20336L112%20336L112%20512C112%20547.3%20140.7%20576%20176%20576L464%20576C499.3%20576%20528%20547.3%20528%20512L528%20336L544%20336C557.2%20336%20569%20327.9%20573.8%20315.7C578.6%20303.5%20575.4%20289.5%20565.8%20280.6L341.8%2072.6zM304%20384L336%20384C362.5%20384%20384%20405.5%20384%20432L384%20528L256%20528L256%20432C256%20405.5%20277.5%20384%20304%20384z'/%3E%3C/svg%3E");
+}
+
+:global(.maplibregl-ctrl-reset):hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 640px) {

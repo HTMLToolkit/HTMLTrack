@@ -1,10 +1,32 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Sun, Moon, RefreshCw, Plus, Trash2, MapPin } from 'lucide-react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Sun,
+  Moon,
+  Monitor,
+  RefreshCw,
+  Plus,
+  Trash2,
+  MapPin,
+} from 'lucide-react';
 import MainContent from './MainContent';
 import TrackingForm from './TrackingForm';
 import { getStore } from '../lib/storage';
 import { normalizeTrackingNumber } from '../lib/carriers';
-import { trackPackage, trackBatch, ApiError, isMockMode, mockSamples } from '../lib/api';
+import {
+  trackPackage,
+  trackBatch,
+  ApiError,
+  isMockMode,
+  mockSamples,
+} from '../lib/api';
 import type { PackageStatus, TrackingPackage } from '../types/tracking';
 import { ACTIVE_STATUSES } from '../types/tracking';
 import styles from './App.module.css';
@@ -23,8 +45,11 @@ function makeId(): string {
 }
 
 export default function App() {
+  type ThemeMode = 'auto' | 'light' | 'dark';
+
   const [packages, setPackages] = useState<TrackingPackage[]>([]);
-  const [isDark, setIsDark] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>('auto');
+  const [systemDark, setSystemDark] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -34,10 +59,24 @@ export default function App() {
   packagesRef.current = packages;
 
   useEffect(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDark(prefersDark);
-    document.documentElement.classList.toggle('dark', prefersDark);
+    const stored = localStorage.getItem('htmltrack.theme');
+    if (stored === 'light' || stored === 'dark' || stored === 'auto') {
+      setThemeMode(stored);
+    }
+
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    setSystemDark(query.matches);
+
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
   }, []);
+
+  const isDark = themeMode === 'dark' || (themeMode === 'auto' && systemDark);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +120,7 @@ export default function App() {
 
         const applyResults = (
           results: Array<Record<string, unknown>>,
-          fallbackByNumber: Map<string, TrackingPackage>
+          fallbackByNumber: Map<string, TrackingPackage>,
         ) => {
           for (const raw of results) {
             const number = String(raw.trackingNumber ?? '');
@@ -94,8 +133,7 @@ export default function App() {
             }
 
             const coords = raw.coordinates as
-              | { latitude: number; longitude: number }
-              | undefined;
+              { latitude: number; longitude: number } | undefined;
 
             updated.set(number, {
               ...base,
@@ -105,8 +143,7 @@ export default function App() {
               estimatedDelivery:
                 (raw.estimatedDelivery as string) ?? base.estimatedDelivery,
               estimatedDeliveryTo:
-                (raw.estimatedDeliveryTo as string) ??
-                base.estimatedDeliveryTo,
+                (raw.estimatedDeliveryTo as string) ?? base.estimatedDeliveryTo,
               coordinates: coords ?? base.coordinates,
               events: Array.isArray(raw.events)
                 ? (raw.events as TrackingPackage['events'])
@@ -116,7 +153,9 @@ export default function App() {
           }
         };
 
-        const fallbackByNumber = new Map(list.map((p) => [p.trackingNumber, p]));
+        const fallbackByNumber = new Map(
+          list.map((p) => [p.trackingNumber, p]),
+        );
 
         const batches: TrackingPackage[][] = [];
         for (let i = 0; i < list.length; i += 40) {
@@ -131,12 +170,12 @@ export default function App() {
               batch.map((p) => ({
                 trackingNumber: p.trackingNumber,
                 carrier: p.carrier,
-              }))
+              })),
             );
             usedBatch = true;
             applyResults(
               results as unknown as Array<Record<string, unknown>>,
-              fallbackByNumber
+              fallbackByNumber,
             );
           } catch {
             usedBatch = false;
@@ -148,14 +187,20 @@ export default function App() {
           await Promise.all(
             list.map(async (pkg) => {
               try {
-                const result = await trackPackage(pkg.trackingNumber, pkg.carrier);
-                applyResults([result as unknown as Record<string, unknown>], fallbackByNumber);
+                const result = await trackPackage(
+                  pkg.trackingNumber,
+                  pkg.carrier,
+                );
+                applyResults(
+                  [result as unknown as Record<string, unknown>],
+                  fallbackByNumber,
+                );
               } catch (error) {
                 const message =
                   error instanceof ApiError ? error.message : 'Refresh failed';
                 updated.set(pkg.trackingNumber, { ...pkg, lastError: message });
               }
-            })
+            }),
           );
         }
 
@@ -169,7 +214,7 @@ export default function App() {
         setRefreshing(false);
       }
     },
-    [persist]
+    [persist],
   );
 
   const refreshRef = useRef(refreshAll);
@@ -185,7 +230,7 @@ export default function App() {
 
     const schedule = () => {
       const active = packagesRef.current.filter((p) =>
-        ACTIVE_STATUSES.includes(p.status)
+        ACTIVE_STATUSES.includes(p.status),
       );
       if (active.length === 0) return;
 
@@ -215,7 +260,7 @@ export default function App() {
     () => () => {
       settleTimersRef.current.forEach((t) => window.clearTimeout(t));
     },
-    []
+    [],
   );
 
   const scheduleSettleChecks = useCallback((pkg: TrackingPackage) => {
@@ -224,7 +269,7 @@ export default function App() {
       window.setTimeout(() => {
         const current = packagesRef.current.find((p) => p.id === pkg.id);
         if (current) void refreshRef.current([current]);
-      }, delay)
+      }, delay),
     );
   }, []);
 
@@ -243,7 +288,7 @@ export default function App() {
       const now = new Date().toISOString();
       const canonical = normalizeTrackingNumber(result.trackingNumber);
       const existing = packagesRef.current.find(
-        (p) => normalizeTrackingNumber(p.trackingNumber) === canonical
+        (p) => normalizeTrackingNumber(p.trackingNumber) === canonical,
       );
 
       const pkg: TrackingPackage = {
@@ -271,7 +316,7 @@ export default function App() {
       scheduleSettleChecks(pkg);
       return pkg;
     },
-    [persist, scheduleSettleChecks]
+    [persist, scheduleSettleChecks],
   );
 
   const removePackage = useCallback(
@@ -288,23 +333,24 @@ export default function App() {
 
       if (selectedId === id) setSelectedId(null);
     },
-    [persist, selectedId]
+    [persist, selectedId],
   );
 
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle('dark', next);
+  const cycleTheme = () => {
+    const order: ThemeMode[] = ['auto', 'light', 'dark'];
+    const next = order[(order.indexOf(themeMode) + 1) % order.length];
+    setThemeMode(next);
+    localStorage.setItem('htmltrack.theme', next);
   };
 
   const activeCount = useMemo(
     () => packages.filter((p) => ACTIVE_STATUSES.includes(p.status)).length,
-    [packages]
+    [packages],
   );
 
   const mappedPackages = useMemo(
     () => packages.filter((p) => p.coordinates),
-    [packages]
+    [packages],
   );
 
   const demoMode = isMockMode();
@@ -312,7 +358,9 @@ export default function App() {
   const loadSamples = useCallback(async () => {
     const now = new Date().toISOString();
     const existing = packagesRef.current;
-    const existingByNumber = new Map(existing.map((p) => [p.trackingNumber, p]));
+    const existingByNumber = new Map(
+      existing.map((p) => [p.trackingNumber, p]),
+    );
 
     const seeded: TrackingPackage[] = mockSamples().map((r) => ({
       id: existingByNumber.get(r.trackingNumber)?.id ?? makeId(),
@@ -332,7 +380,7 @@ export default function App() {
     const seededNumbers = new Set(seeded.map((p) => p.trackingNumber));
     const kept = existing.filter((p) => !seededNumbers.has(p.trackingNumber));
     const next = [...seeded, ...kept].sort((a, b) =>
-      b.addedAt.localeCompare(a.addedAt)
+      b.addedAt.localeCompare(a.addedAt),
     );
 
     await persist(next);
@@ -374,10 +422,21 @@ export default function App() {
             </button>
             <button
               className={styles.iconBtn}
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
+              onClick={cycleTheme}
+              aria-label={`Theme: ${themeMode}${
+                themeMode === 'auto' ? ` (${isDark ? 'dark' : 'light'})` : ''
+              }. Click to change.`}
+              title={`Theme: ${themeMode}${
+                themeMode === 'auto' ? ` (${isDark ? 'dark' : 'light'})` : ''
+              }`}
             >
-              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+              {themeMode === 'auto' ? (
+                <Monitor size={20} />
+              ) : isDark ? (
+                <Sun size={20} />
+              ) : (
+                <Moon size={20} />
+              )}
             </button>
           </div>
         </div>
@@ -409,8 +468,8 @@ export default function App() {
               {packages.length > 0 && mappedPackages.length === 0 && (
                 <p className={styles.mapHint}>
                   <MapPin size={15} />
-                  The map appears once a carrier reports destination
-                  coordinates for a parcel.
+                  The map appears once a carrier reports destination coordinates
+                  for a parcel.
                 </p>
               )}
 
@@ -430,10 +489,7 @@ export default function App() {
         />
 
         {showForm && (
-          <TrackingForm
-            onAdd={addPackage}
-            onClose={() => setShowForm(false)}
-          />
+          <TrackingForm onAdd={addPackage} onClose={() => setShowForm(false)} />
         )}
       </main>
 

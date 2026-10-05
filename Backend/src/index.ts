@@ -40,7 +40,7 @@ function readCarrier(value: unknown): string | null {
 const router = Router();
 
 router.get('/api/health', () =>
-  jsonResponse({ status: 'ok', timestamp: new Date().toISOString() })
+  jsonResponse({ status: 'ok', timestamp: new Date().toISOString() }),
 );
 
 router.post('/api/track', async (req: Request, env: Env) => {
@@ -62,14 +62,14 @@ router.post('/api/track', async (req: Request, env: Env) => {
     if (!trackingNumber || !carrier) {
       return jsonResponse(
         { error: 'A valid trackingNumber and carrier are required' },
-        400
+        400,
       );
     }
 
     const result = await trackingService.trackPackage(
       trackingNumber,
       carrier,
-      env.TRACK_API_KEY
+      env.TRACK_API_KEY,
     );
 
     return jsonResponse(result);
@@ -103,21 +103,25 @@ router.post('/api/track/batch', async (req: Request, env: Env) => {
       if (!trackingNumber || !carrier) {
         return jsonResponse(
           { error: 'Every parcel needs a valid trackingNumber and carrier' },
-          400
+          400,
         );
       }
       parcels.push({ trackingNumber, carrier });
     }
 
-    const results = await trackingService.trackBatch(parcels, env.TRACK_API_KEY);
+    const results = await trackingService.trackBatch(
+      parcels,
+      env.TRACK_API_KEY,
+    );
     return jsonResponse({ results });
   } catch (error) {
     return errorHandler(error);
   }
 });
 
-router.options('*', () =>
-  new Response(null, { status: 204, headers: corsHeaders })
+router.options(
+  '*',
+  () => new Response(null, { status: 204, headers: corsHeaders }),
 );
 
 router.all('*', () => jsonResponse({ error: 'Not Found' }, 404));

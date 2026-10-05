@@ -42,9 +42,7 @@ export const OTHER_CARRIER = 'Other';
 
 export function detectCarrier(trackingNumber: string): Carrier | null {
   const value = trackingNumber.trim();
-  const matches = CARRIERS.filter((c) =>
-    c.patterns.some((p) => p.test(value))
-  );
+  const matches = CARRIERS.filter((c) => c.patterns.some((p) => p.test(value)));
 
   if (matches.length !== 1) return null;
 

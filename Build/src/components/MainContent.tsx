@@ -56,7 +56,7 @@ export default function MainContent({
         f,
         f === 'all'
           ? packages.length
-          : packages.filter((p) => p.status === f).length
+          : packages.filter((p) => p.status === f).length,
       );
     }
     return map;
@@ -77,7 +77,11 @@ export default function MainContent({
           />
         </div>
 
-        <div className={styles.filters} role="tablist" aria-label="Filter parcels">
+        <div
+          className={styles.filters}
+          role="tablist"
+          aria-label="Filter parcels"
+        >
           {FILTERS.map((f) => {
             const count = counts.get(f) ?? 0;
             if (f !== 'all' && count === 0) return null;
@@ -103,7 +107,9 @@ export default function MainContent({
       {filtered.length === 0 ? (
         <div className={styles.empty}>
           <PackageOpen size={40} />
-          <h3>{packages.length === 0 ? 'No parcels yet' : 'Nothing matches'}</h3>
+          <h3>
+            {packages.length === 0 ? 'No parcels yet' : 'Nothing matches'}
+          </h3>
           <p>
             {packages.length === 0
               ? 'Add a tracking number to see it here.'

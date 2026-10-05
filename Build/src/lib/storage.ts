@@ -47,7 +47,7 @@ class IndexedDbStore implements PackageStore {
     const db = await this.open();
     const tx = db.transaction(STORE, 'readonly');
     const items = await requestToPromise(
-      tx.objectStore(STORE).getAll() as IDBRequest<TrackingPackage[]>
+      tx.objectStore(STORE).getAll() as IDBRequest<TrackingPackage[]>,
     );
     return items.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
   }

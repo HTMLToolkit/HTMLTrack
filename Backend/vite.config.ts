@@ -10,12 +10,12 @@ export default defineConfig({
       entry: 'src/index.ts',
       formats: ['es'],
       name: 'worker',
-      fileName: () => 'index.js'
+      fileName: () => 'index.js',
     },
     rollupOptions: {
       output: {
-        format: 'es'
-      }
-    }
-  }
+        format: 'es',
+      },
+    },
+  },
 });

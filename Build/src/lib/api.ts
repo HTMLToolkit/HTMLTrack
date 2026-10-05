@@ -1,4 +1,8 @@
-import type { TrackResponse, TrackingEvent, PackageStatus } from '../types/tracking';
+import type {
+  TrackResponse,
+  TrackingEvent,
+  PackageStatus,
+} from '../types/tracking';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -17,12 +21,13 @@ function getApiBase(): string {
 }
 
 export const isMockMode = (): boolean =>
-  import.meta.env.VITE_MOCK_API === 'true' || import.meta.env.VITE_MOCK_API === '1';
+  import.meta.env.VITE_MOCK_API === 'true' ||
+  import.meta.env.VITE_MOCK_API === '1';
 
 export async function trackPackage(
   trackingNumber: string,
   carrier: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<TrackResponse> {
   const response = await fetch(`${getApiBase()}/api/track`, {
     method: 'POST',
@@ -61,7 +66,7 @@ export type BatchEntry =
 
 export async function trackBatch(
   parcels: Array<{ trackingNumber: string; carrier: string }>,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): Promise<BatchEntry[]> {
   const response = await fetch(`${getApiBase()}/api/track/batch`, {
     method: 'POST',
@@ -71,7 +76,10 @@ export async function trackBatch(
   });
 
   if (!response.ok) {
-    throw new ApiError(`Batch refresh failed (${response.status})`, response.status);
+    throw new ApiError(
+      `Batch refresh failed (${response.status})`,
+      response.status,
+    );
   }
 
   const data = (await response.json()) as { results?: BatchEntry[] };
@@ -172,7 +180,9 @@ const DEMO_PARCELS: Array<{
     lat: 39.7392,
     lng: -104.9903,
     etaInDays: 5,
-    events: [['2h ago', 'Denver, CO, US', 'Shipment information sent to carrier']],
+    events: [
+      ['2h ago', 'Denver, CO, US', 'Shipment information sent to carrier'],
+    ],
   },
   {
     trackingNumber: '1Z888RR10123456784',
@@ -200,7 +210,9 @@ export function mockSamples(): TrackResponse[] {
     const eta =
       d.etaInDays === null
         ? undefined
-        : new Date(now + d.etaInDays * 86_400_000 + 18 * 3600_000).toISOString();
+        : new Date(
+            now + d.etaInDays * 86_400_000 + 18 * 3600_000,
+          ).toISOString();
 
     return {
       trackingNumber: d.trackingNumber,
@@ -239,7 +251,10 @@ function seedFrom(value: string): number {
   return hash;
 }
 
-export function mockTrack(trackingNumber: string, carrier: string): TrackResponse {
+export function mockTrack(
+  trackingNumber: string,
+  carrier: string,
+): TrackResponse {
   const seed = seedFrom(trackingNumber);
   const place = CITIES[seed % CITIES.length];
   const statusRoll = seed % 10;

@@ -44,7 +44,10 @@ export default function TrackingCard({
   const [expanded, setExpanded] = useState(false);
   const Icon = ICONS[pkg.status] ?? Clock;
   const color = statusColor(pkg.status);
-  const window = formatDeliveryWindow(pkg.estimatedDelivery, pkg.estimatedDeliveryTo);
+  const window = formatDeliveryWindow(
+    pkg.estimatedDelivery,
+    pkg.estimatedDeliveryTo,
+  );
   const days = daysUntil(pkg.estimatedDelivery);
   const waiting = pkg.status === 'pending';
   const checked = formatRelative(pkg.lastCheckedAt ?? pkg.lastUpdate);
@@ -139,7 +142,10 @@ export default function TrackingCard({
             {expanded && (
               <ol className={styles.timeline}>
                 {pkg.events.slice(0, 12).map((event, index) => (
-                  <li key={`${event.timestamp}-${index}`} className={styles.event}>
+                  <li
+                    key={`${event.timestamp}-${index}`}
+                    className={styles.event}
+                  >
                     <span className={styles.eventDot} />
                     <div>
                       <p className={styles.eventDesc}>{event.description}</p>

@@ -12,7 +12,8 @@ export default defineConfig({
       manifest: {
         name: 'HTMLTrack - Parcel Tracking',
         short_name: 'HTMLTrack',
-        description: 'Track every parcel in one place with live status, delivery estimates and a map.',
+        description:
+          'Track every parcel in one place with live status, delivery estimates and a map.',
         start_url: './',
         scope: './',
         display: 'standalone',

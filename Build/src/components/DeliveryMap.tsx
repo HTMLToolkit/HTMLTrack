@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import maplibregl, { type Map as MapLibreMap, type Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { TrackingPackage } from '../types/tracking';
@@ -7,17 +7,23 @@ import styles from './DeliveryMap.module.css';
 
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
 
-type TileConfig = { id: string; dark: string; light: string; attribution: string };
+type TileConfig = {
+  id: string;
+  dark: string;
+  light: string;
+  attribution: string;
+};
 
 function resolveTiles(): TileConfig {
   const cartoKey = import.meta.env.VITE_CARTO_API_KEY?.trim();
 
   if (cartoKey) {
     const suffix = `?key=${encodeURIComponent(cartoKey)}`;
+    const base = 'https://basemaps.cartocdn.com/rastertiles';
     return {
       id: 'carto',
-      light: `https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png${suffix}`,
-      dark: `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png${suffix}`,
+      light: `${base}/positron/{z}/{x}/{y}.png${suffix}`,
+      dark: `${base}/dark_matter/{z}/{x}/{y}.png${suffix}`,
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     };
@@ -30,6 +36,41 @@ function resolveTiles(): TileConfig {
     attribution:
       '&copy; <a href="https://www.esri.com/">Esri</a> &copy; Esri, HERE, Garmin, Maxar, Earthstar Geographics',
   };
+}
+
+class ResetViewControl implements maplibregl.IControl {
+  private container: HTMLDivElement;
+
+  constructor(private readonly onReset: { current: () => void }) {
+    this.container = document.createElement('div');
+    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'maplibregl-ctrl-reset';
+    btn.title = 'Reset view';
+    btn.setAttribute('aria-label', 'Reset map view');
+
+    const icon = document.createElement('span');
+    icon.className = 'maplibregl-ctrl-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    btn.appendChild(icon);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onReset.current();
+    });
+
+    this.container.appendChild(btn);
+  }
+
+  onAdd(): HTMLElement {
+    return this.container;
+  }
+
+  onRemove(): void {
+    this.container.remove();
+  }
 }
 
 interface DeliveryMapProps {
@@ -52,6 +93,40 @@ export default function DeliveryMap({
   onSelectRef.current = onSelect;
 
   const located = packages.filter((p) => p.coordinates);
+
+  const resetViewRef = useRef<() => void>(() => {});
+  const fitLocated = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (located.length === 0) {
+      map.flyTo({ center: [-98.5, 39.5], zoom: 3, duration: 700 });
+      return;
+    }
+
+    if (located.length === 1) {
+      const only = located[0].coordinates!;
+      map.flyTo({
+        center: [only.longitude, only.latitude],
+        zoom: 9,
+        duration: 700,
+      });
+      return;
+    }
+
+    const bounds = new maplibregl.LngLatBounds();
+    for (const pkg of located) {
+      const { longitude, latitude } = pkg.coordinates!;
+      bounds.extend([longitude, latitude]);
+    }
+    map.fitBounds(bounds, {
+      padding: { top: 60, bottom: 60, left: 60, right: 60 },
+      maxZoom: 11,
+      duration: 700,
+    });
+  }, [located]);
+
+  resetViewRef.current = fitLocated;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -82,7 +157,13 @@ export default function DeliveryMap({
       (window as unknown as { __map?: MapLibreMap }).__map = map;
     }
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false }),
+      'top-right',
+    );
+
+    map.addControl(new ResetViewControl(resetViewRef), 'top-right');
+
     map.on('click', () => onSelectRef.current(null));
 
     mapRef.current = map;
@@ -104,8 +185,7 @@ export default function DeliveryMap({
 
     const apply = () => {
       const source = map.getSource(sourceId) as
-        | maplibregl.RasterTileSource
-        | undefined;
+        maplibregl.RasterTileSource | undefined;
       source?.setTiles([isDark ? tiles.dark : tiles.light]);
     };
 
@@ -151,7 +231,7 @@ export default function DeliveryMap({
       markersRef.current.push(
         new maplibregl.Marker({ element: el, anchor: 'center' })
           .setLngLat([longitude, latitude])
-          .addTo(map)
+          .addTo(map),
       );
     }
   }, [located, selectedId]);
@@ -167,20 +247,8 @@ export default function DeliveryMap({
 
     if (!countChanged || located.length === 0) return;
 
-    const bounds = new maplibregl.LngLatBounds();
-    for (const pkg of located) {
-      const { longitude, latitude } = pkg.coordinates!;
-      bounds.extend([longitude, latitude]);
-    }
-
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, {
-        padding: { top: 60, bottom: 60, left: 60, right: 60 },
-        maxZoom: 11,
-        duration: 900,
-      });
-    }
-  }, [located]);
+    fitLocated();
+  }, [located, fitLocated]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -203,7 +271,9 @@ export default function DeliveryMap({
     <section className={styles.wrapper} aria-label="Delivery map">
       <div ref={containerRef} className={styles.canvas} />
       <div className={styles.legend}>
-        <span>{located.length} destination{located.length === 1 ? '' : 's'} mapped</span>
+        <span>
+          {located.length} destination{located.length === 1 ? '' : 's'} mapped
+        </span>
       </div>
     </section>
   );

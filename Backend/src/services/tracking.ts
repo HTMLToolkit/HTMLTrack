@@ -30,7 +30,7 @@ export interface TrackingService {
   trackPackage(
     trackingNumber: string,
     carrier: string,
-    apiKey: string
+    apiKey: string,
   ): Promise<TrackingResult>;
   trackBatch(items: BatchItem[], apiKey: string): Promise<BatchResult[]>;
 }
@@ -92,7 +92,7 @@ interface ApiEnvelope {
 async function callApi(
   endpoint: string,
   payload: unknown,
-  apiKey: string
+  apiKey: string,
 ): Promise<ApiEnvelope> {
   const response = await fetch(`${API_BASE}/${endpoint}`, {
     method: 'POST',
@@ -137,7 +137,7 @@ function mapEvents(trackInfo: Record<string, any>): TrackingEvent[] {
 function buildResult(
   trackInfo: Record<string, any>,
   trackingNumber: string,
-  carrier: string
+  carrier: string,
 ): TrackingResult {
   const latestStatus = trackInfo.latest_status?.status ?? 'NotFound';
   const status = STATUS_MAP[latestStatus] ?? 'pending';
@@ -173,7 +173,7 @@ function buildResult(
 async function register(
   normalized: string,
   carrierCode: number | undefined,
-  apiKey: string
+  apiKey: string,
 ): Promise<void> {
   const item: { number: string; carrier?: number } = { number: normalized };
   if (carrierCode) item.carrier = carrierCode;
@@ -191,22 +191,32 @@ async function register(
 async function pollUntilReady(
   normalized: string,
   apiKey: string,
-  attempts: number
+  attempts: number,
 ): Promise<Record<string, any> | null> {
   const backoff = [400, 900, 1800, 3000, 4500];
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const envelope = await callApi('gettrackinfo', [{ number: normalized }], apiKey);
+    const envelope = await callApi(
+      'gettrackinfo',
+      [{ number: normalized }],
+      apiKey,
+    );
     const rejection = firstRejection(envelope);
 
     if (rejection && rejection.error.code !== NOT_REGISTERED_CODE) {
-      throw new TrackingError(rejection.error.message, 400, rejection.error.code);
+      throw new TrackingError(
+        rejection.error.message,
+        400,
+        rejection.error.code,
+      );
     }
 
     const accepted = envelope.data?.accepted?.[0];
     const trackInfo = accepted?.track_info;
     const hasData =
-      trackInfo && (trackInfo.latest_status?.status !== 'NotFound' || mapEvents(trackInfo).length > 0);
+      trackInfo &&
+      (trackInfo.latest_status?.status !== 'NotFound' ||
+        mapEvents(trackInfo).length > 0);
 
     if (hasData) return trackInfo;
 
@@ -244,7 +254,7 @@ export const trackingService: TrackingService = {
       console.error('[17Track] unexpected error', error);
       throw new TrackingError(
         'Tracking provider is unreachable. Please try again shortly.',
-        502
+        502,
       );
     }
   },
@@ -252,7 +262,10 @@ export const trackingService: TrackingService = {
   async trackBatch(items, apiKey) {
     if (items.length === 0) return [];
     if (items.length > 40) {
-      throw new TrackingError('A maximum of 40 parcels can be refreshed at once', 400);
+      throw new TrackingError(
+        'A maximum of 40 parcels can be refreshed at once',
+        400,
+      );
     }
 
     const normalized = items.map((item) => ({
@@ -261,7 +274,9 @@ export const trackingService: TrackingService = {
     }));
 
     const registerBody = normalized.map(({ trackingNumber, carrier }) => {
-      const entry: { number: string; carrier?: number } = { number: trackingNumber };
+      const entry: { number: string; carrier?: number } = {
+        number: trackingNumber,
+      };
       const code = CARRIER_CODES[carrier];
       if (code) entry.carrier = code;
       return entry;
@@ -283,7 +298,7 @@ export const trackingService: TrackingService = {
       const infoEnvelope = await callApi(
         'gettrackinfo',
         normalized.map(({ trackingNumber }) => ({ number: trackingNumber })),
-        apiKey
+        apiKey,
       );
 
       for (const rejection of infoEnvelope.data?.rejected ?? []) {
@@ -330,7 +345,7 @@ export const trackingService: TrackingService = {
       console.error('[17Track] batch error', error);
       throw new TrackingError(
         'Tracking provider is unreachable. Please try again shortly.',
-        502
+        502,
       );
     }
   },

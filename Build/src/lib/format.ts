@@ -36,7 +36,7 @@ export function formatRelative(iso: string): string {
 
 export function formatDeliveryWindow(
   from?: string,
-  to?: string
+  to?: string,
 ): string | null {
   if (!from) return null;
 

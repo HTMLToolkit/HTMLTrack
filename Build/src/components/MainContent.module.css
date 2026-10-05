@@ -25,7 +25,8 @@
 
 .searchInput {
   width: 100%;
-  padding: var(--spacing-3) var(--spacing-3) var(--spacing-3) calc(var(--spacing-4) * 2.5);
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-3)
+    calc(var(--spacing-4) * 2.5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background-color: var(--card);
